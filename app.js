@@ -6,7 +6,7 @@ const app = express()
 
 app.use(cors({
     origin:[ process.env.CORS_ORIGIN ||"https://task-e-commerce-ruddy.vercel.app/","https://task-e-commerce-ruddy.vercel.app"],
-    credentials: true
+    // credentials: true
 }))
 
 app.use(express.json({limit: "16kb"}))
