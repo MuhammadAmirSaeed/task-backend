@@ -7,11 +7,15 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 const createProduct = asyncHandler(async (req, res) => {
   const { name, price, quantity } = req.body;
   const userId = req.user._id;
-
   const uploadedImages = [];
-  for (const file of req.files) {
-    const response = await uploadOnCloudinary(file.path);
-    if (response) uploadedImages.push(response.url);
+  if (Array.isArray(req?.files)) {
+    for (const file of req.files) {
+      const response = await uploadOnCloudinary(file.path);
+      if (response) uploadedImages.push(response.url);
+    }
+  } else {
+    // Handle the case where req.files is undefined or not an array
+    console.error('No files uploaded or req.files is not an array');
   }
 
   if (uploadedImages.length === 0) {
