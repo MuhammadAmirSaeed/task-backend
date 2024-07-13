@@ -5,36 +5,51 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, price, quantity } = req.body;
-  const userId = req.user._id;
-  const uploadedImages = [];
-  if (Array.isArray(req?.files)) {
-    for (const file of req.files) {
-      const response = await uploadOnCloudinary(file.path);
-      if (response) uploadedImages.push(response.url);
+  try {
+    const { name, price, quantity } = req.body;
+    const userId = req.user._id;
+    const uploadedImages = [];
+
+    if (Array.isArray(req?.files)) {
+      for (const file of req.files) {
+        const response = await uploadOnCloudinary(file.path);
+        if (response) uploadedImages.push(response.url);
+      }
+    } else {
+      // Handle the case where req.files is undefined or not an array
+      console.error('No files uploaded or req.files is not an array');
     }
-  } else {
-    // Handle the case where req.files is undefined or not an array
-    console.error('No files uploaded or req.files is not an array');
+
+    if (uploadedImages.length === 0) {
+      throw new ApiError(500, "Something went wrong while uploading images");
+    }
+
+    const newProduct = new Product({
+      name,
+      price,
+      quantity,
+      pictures: uploadedImages,
+      userId
+    });
+
+    const savedProduct = await newProduct.save();
+    return res.status(201).json(
+      new ApiResponse(200, savedProduct, "Product created successfully")
+    );
+
+  } catch (error) {
+    console.error('Error creating product:', error); // Log the error details
+
+  
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+
+   
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
-
-  if (uploadedImages.length === 0) {
-    throw new ApiError(500, "Something went wrong while uploading images");
-  }
-
-  const newProduct = new Product({
-    name,
-    price,
-    quantity,
-    pictures: uploadedImages,
-    userId
-  });
-
-  const savedProduct = await newProduct.save();
-  return res.status(201).json(
-    new ApiResponse(200, savedProduct, "Product created successfully")
-)
 });
+
 
 // Get All Products
 const getAllProducts = asyncHandler(async (req, res) => {
