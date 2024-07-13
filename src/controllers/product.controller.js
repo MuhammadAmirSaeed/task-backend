@@ -3,7 +3,8 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-
+import fs from "fs"
+import path from 'path';
 const createProduct = asyncHandler(async (req, res) => {
   try {
     const { name, price, quantity } = req.body;
@@ -12,7 +13,12 @@ const createProduct = asyncHandler(async (req, res) => {
 
     if (Array.isArray(req?.files)) {
       for (const file of req.files) {
-        const response = await uploadOnCloudinary(file.path);
+        const filePath = path.resolve(file.path);
+
+        if (!fs.existsSync(filePath)) {
+          throw new ApiError(400, `File not found: ${filePath}`);
+        }
+        const response = await uploadOnCloudinary(filePath);
         if (response) uploadedImages.push(response.url);
       }
     } else {
