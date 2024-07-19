@@ -11,21 +11,24 @@ const createProduct = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const uploadedImages = [];
 
-    if (Array.isArray(req?.files)) {
-      for (const file of req.files) {
-        const filePath = path.resolve(file.path);
-
-        if (!fs.existsSync(filePath)) {
-          throw new ApiError(400, `File not found: ${filePath}`);
-        }
-        const response = await uploadOnCloudinary(filePath);
-        if (response) uploadedImages.push(response.url);
-      }
-    } else {
-      // Handle the case where req.files is undefined or not an array
-      console.error('No files uploaded or req.files is not an array');
+    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+      throw new ApiError(400, "No files uploaded or req.files is not an array");
     }
 
+    for (const file of req.files) {
+      const filePath = path.resolve(file.path);
+      if (!fs.existsSync(filePath)) {
+        throw new ApiError(400, `File not found: ${filePath}`);
+      }
+      const response = await uploadOnCloudinary(filePath);
+      if (!response) {
+        throw new ApiError(500, "Failed to upload image to Cloudinary");
+      }
+      uploadedImages.push(response.url);
+    }
+           if(uploadedImages.lenght >= 6){
+      throw new ApiError(400, "You can only upload 6 images");
+           }
     if (uploadedImages.length === 0) {
       throw new ApiError(500, "Something went wrong while uploading images");
     }
@@ -45,18 +48,12 @@ const createProduct = asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('Error creating product:', error); // Log the error details
-
-  
     if (error instanceof ApiError) {
       return res.status(error.statusCode).json({ message: error.message });
     }
-
-   
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 });
-
-
 // Get All Products
 const getAllProducts = asyncHandler(async (req, res) => {
   const products = await Product.find({});
